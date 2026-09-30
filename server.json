@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.livereacting/livereacting",
+  "title": "LiveReacting",
+  "description": "Build, schedule, start, monitor and analyse live video streams on YouTube, Facebook and RTMP.",
+  "version": "1.1.0",
+  "websiteUrl": "https://www.livereacting.com/mcp",
+  "repository": {
+    "url": "https://github.com/LiveReacting/livereacting-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.livereacting.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <LiveReacting API key>. Create one in the Studio Developer section.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
