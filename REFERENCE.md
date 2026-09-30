@@ -39,7 +39,7 @@ https://mcp.livereacting.com/mcp
 | Response body | `application/json`. The server does not open an SSE stream |
 | Protocol revisions | `2024-10-07`, `2024-11-05`, `2025-03-26`, `2025-06-18`, `2025-11-25` |
 | Server name | `livereacting` |
-| Server version | `1.1.0` |
+| Server version | `1.2.0` |
 | MCP SDK | `@modelcontextprotocol/sdk` 1.30.0 |
 | Capabilities | Tools only. No resources, no prompts, no sampling, no elicitation |
 
@@ -67,11 +67,29 @@ Authorization: Bearer lr_…
 
 A missing or invalid key returns `401 INVALID_API_KEY`.
 
+**OAuth sign-in (ChatGPT, Claude).** Apps that cannot take a pasted key sign in with OAuth
+2.1 instead. The customer adds the MCP URL, logs in with their normal livereacting.com
+account and clicks Allow. Discovery starts from the `401` on an unauthenticated call, whose
+`WWW-Authenticate` header points at
+`https://mcp.livereacting.com/.well-known/oauth-protected-resource/mcp`.
+
+- Clients identify themselves with a Client ID Metadata Document from `chatgpt.com`,
+  `openai.com` or `claude.ai`. There is no dynamic client registration, so a client that
+  needs it (Cursor, Gemini CLI) uses an API key.
+- Authorization code with PKCE `S256`, public clients (`token_endpoint_auth_method: none`),
+  `iss` on every authorization response (RFC 9207), and the `resource` parameter
+  (RFC 8707).
+- One scope, `livereacting`. It grants what an API key grants.
+- Access tokens last one hour. Refresh tokens last 90 days from their last use, work once, and
+  a second use of an old one ends the connection. The customer then connects again.
+- An expired or revoked access token returns `401` with `error="invalid_token"`.
+
 ### Who can use it
 
 API access is included with every paid plan. An account on the Free plan gets
-`403 API_ACCESS_REQUIRES_PAID_PLAN` on every call. The message names the upgrade page,
-`https://www.livereacting.com/pricing`, so an agent can tell the customer what to do.
+`403 API_ACCESS_REQUIRES_PAID_PLAN` on every call, and cannot finish the OAuth sign-in. The
+message explains the limit. Tool results never ask the customer to upgrade: ChatGPT's plugin
+rules forbid it, so the server drops upgrade sentences from the messages it relays.
 
 Two cases break that rule, one in each direction. An account we have given an access override
 keeps API access on the Free plan. An account whose active subscription is paused loses API
@@ -185,10 +203,10 @@ a custom header `Authorization: Bearer lr_…`.
 | Gemini CLI | `headers` in `settings.json` |
 | Zed | `headers` in `settings.json` |
 | Goose | remote extension header |
-| ChatGPT | connectors take OAuth or nothing, never a pasted key |
+| ChatGPT | OAuth sign-in; connectors never take a pasted key |
+| Claude web and Desktop | OAuth sign-in as a custom connector |
 
-ChatGPT is not supported. Its connectors accept OAuth only, and this server authenticates
-with an API key. OAuth is planned but is not shipped.
+ChatGPT and Claude web connect with OAuth, described under [Authentication](#authentication).
 
 ### When a client will not connect
 
@@ -264,8 +282,13 @@ Three conventions run through every entry below.
 - Annotations are hints for the client, not enforcement. The MCP specification tells
   clients to treat them as untrusted. Authorisation is always enforced on the server.
 
-Each tool lists the scope it will need when OAuth ships. Nothing enforces scopes today. An
-API key grants everything.
+Every tool sets `readOnlyHint`, `destructiveHint` and `openWorldHint`. `openWorldHint` is
+`true` when the tool can change what viewers of a public stream see, directly or through
+[autoSynch](#autosynch-and-synced), or fetches from an outside URL. `destructiveHint` is
+`true` when another call cannot undo the change.
+
+Each tool lists a finer scope for a future split. Nothing enforces it today: an API key and
+the OAuth scope `livereacting` both grant everything.
 
 ---
 
@@ -280,7 +303,7 @@ the account.
 `livereacting_update_project` need. A destination cannot be created from here. The customer
 connects one in the LiveReacting Studio.
 
-**Annotations** `readOnlyHint: true`. **Scope** `destinations:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `destinations:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -319,7 +342,7 @@ An expired YouTube access token is renewed during this check when the account st
 refresh token, so a login that has expired can still answer `valid: true`. When the renewal
 fails, the customer reconnects the destination in the LiveReacting Studio.
 
-**Annotations** `readOnlyHint: true`. **Scope** `destinations:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `destinations:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -348,7 +371,7 @@ stream: its video format, its destinations, and the scenes that hold the content
 **Use it** when the customer names a stream but you do not have its id. For the detail of
 one project use `livereacting_get_project`.
 
-**Annotations** `readOnlyHint: true`. **Scope** `projects:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `projects:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -379,7 +402,7 @@ stream. For the live state of a running stream use `livereacting_get_stream_stat
 instead, which reads the broadcast snapshot rather than the project. For scenes prefer
 `livereacting_get_scenes`, which pages properly.
 
-**Annotations** `readOnlyHint: true`. **Scope** `projects:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `projects:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -432,7 +455,7 @@ nothing else to set. For a stream that must stop on its own pass
 
 Privacy settings and advanced YouTube options can only be set in the LiveReacting Studio.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: false`. Calling it twice creates
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: false`. Calling it twice creates
 two projects. **Scope** `projects:write`.
 
 | Input | Type | Required | Meaning |
@@ -481,7 +504,7 @@ while it is on air: `format`, `duration`, `audioQuality`, `destinationIds` and
 `livereacting_stop_stream` or cancel the schedule with `livereacting_cancel_schedules`
 first. `name`, `title`, `description` and `autoSynch` can be changed at any time.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: true`. Sending the same fields
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true`. Sending the same fields
 twice leaves the same result. **Scope** `projects:write`.
 
 | Input | Type | Required | Meaning |
@@ -517,7 +540,7 @@ goes out on air. A project can have no active scene at all, because a scene crea
 `livereacting_set_playlist`, and to find the scene id before
 `livereacting_activate_scene`.
 
-**Annotations** `readOnlyHint: true`. **Scope** `projects:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `projects:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -558,7 +581,7 @@ chain, so the response lists the layers it changed. Read it. The last remaining 
 cannot be deleted. Deleting the active scene makes the first remaining scene active.
 Confirm with the customer before deleting anything.
 
-**Annotations** `destructiveHint: true`, `idempotentHint: false`. A client should ask the
+**Annotations** `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`. A client should ask the
 user to confirm. **Scope** `projects:write`.
 
 | Input | Type | Required | Meaning |
@@ -604,7 +627,7 @@ Make one scene the active scene, so its content is what goes out on air.
 active at a time, and activating a scene deactivates the previous one. A project with no
 active scene plays nothing, so activate one before starting a stream.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: true`. Calling it again for the
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true`. Calling it again for the
 same scene changes nothing, so it is safe to repeat. **Scope** `projects:write`.
 
 | Input | Type | Required | Meaning |
@@ -646,7 +669,7 @@ Every file must have finished importing and encoding. On the first-scene path th
 validated before anything is created, so a bad file id does not leave an empty active scene
 behind.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: false`. Calling it twice creates
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`. Calling it twice creates
 two scenes. **Scope** `projects:write`.
 
 | Input | Type | Required | Meaning |
@@ -706,7 +729,7 @@ Three layer types can be created. `videoPlaylist` and `audioPlaylist` hold a lis
 `video` holds a single file. Text, image and interactive layers are readable with
 `livereacting_get_layer` but can only be created in the LiveReacting Studio.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: false`. Calling it twice adds two
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`. Calling it twice adds two
 layers. After a timeout, read the scene with `livereacting_get_scenes` to see whether the
 layer arrived, rather than calling again. **Scope** `projects:write`.
 
@@ -761,7 +784,7 @@ This reads the saved layer document, not the running stream. On a live broadcast
 document can lag what viewers see, so `currentItem` and each item's `isPlaying` are not
 evidence of what is on air right now.
 
-**Annotations** `readOnlyHint: true`. **Scope** `projects:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `projects:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -816,7 +839,7 @@ editing it in the LiveReacting Studio at the same moment, read the list again im
 before writing, and tell them not to edit while you work. See
 [one editor at a time](#one-editor-at-a-time).
 
-**Annotations** `destructiveHint: true`, `idempotentHint: false`. Sending the same complete
+**Annotations** `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`. Sending the same complete
 list twice produces the same playlist contents, but it also restarts playback and
 regenerates every `playlistItemId`, so it is not a safe retry. After a timeout, read the
 layer with `livereacting_get_layer` rather than calling again. **Scope** `projects:write`.
@@ -880,7 +903,7 @@ Start streaming a project to its destinations immediately.
 If the project is already running or already scheduled, this returns the existing broadcast
 id instead of starting anything.
 
-**Annotations** `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`.
 **Scope** `streams:write`.
 
 **This call is not idempotent.** If it times out, call `livereacting_get_stream_status` and
@@ -938,7 +961,7 @@ Every viewer stops watching immediately and the broadcast cannot be resumed. A l
 creates a new broadcast. Confirm with the customer before calling this on a stream you did
 not start.
 
-**Annotations** `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`. On
+**Annotations** `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: false`, `openWorldHint: true`. On
 a timeout call `livereacting_get_stream_status` rather than calling this again. **Scope**
 `streams:write`.
 
@@ -965,7 +988,7 @@ finished broadcast use `livereacting_list_broadcasts` instead.
 **Poll no more often than every 5 seconds.** A stream needs tens of seconds to reach `LIVE`.
 See [polling](#polling).
 
-**Annotations** `readOnlyHint: true`, `idempotentHint: true`, `openWorldHint: false`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`.
 **Scope** `streams:read`.
 
 | Input | Type | Required | Meaning |
@@ -1055,7 +1078,7 @@ Four rules the API will otherwise only teach you by refusing the call.
    The dates are sorted and checked in pairs, and a shorter gap is refused with a message
    naming the earliest time the later run can take.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`.
 **Scope** `streams:write`.
 
 | Input | Type | Required | Meaning |
@@ -1097,7 +1120,7 @@ This only ever touches `SCHEDULED` broadcasts. It cannot stop a running one. Use
 `livereacting_stop_stream` for that. Cancelling cannot be undone. The schedule has to be
 created again.
 
-**Annotations** `destructiveHint: true`, `idempotentHint: true`, `openWorldHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: true`, `idempotentHint: true`, `openWorldHint: false`.
 **Scope** `streams:write`.
 
 | Input | Type | Required | Meaning |
@@ -1134,7 +1157,7 @@ Push the project's current setup to the broadcast that is running now.
 stream by themselves. A running stream uses the copy of the project it was started with, so
 edits made while it runs are invisible to viewers until they are synced.
 
-**Annotations** `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true`.
 Syncing twice has the same effect as once. **Scope** `streams:write`.
 
 | Input | Type | Required | Meaning |
@@ -1154,7 +1177,7 @@ List a project's finished broadcasts, newest first.
 **Use it** to get a `liveId` for `livereacting_get_stream_analytics`. Only finished
 broadcasts appear here. Read a running one with `livereacting_get_stream_status`.
 
-**Annotations** `readOnlyHint: true`, `idempotentHint: true`, `openWorldHint: false`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`.
 **Scope** `streams:read`.
 
 | Input | Type | Required | Meaning |
@@ -1194,7 +1217,7 @@ cannot go in a playlist until the problem is fixed, which usually means encoding
 To add a file, use `livereacting_upload_file` for a local file, `livereacting_import_from_url`
 for a direct link, or `livereacting_import_media` for a Google Drive, Dropbox or YouTube link.
 
-**Annotations** `readOnlyHint: true`. **Scope** `media:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `media:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -1234,7 +1257,7 @@ Read one file from the media library by id.
 needs `livereacting_encode_media` before it can be streamed. To list files use
 `livereacting_list_media`.
 
-**Annotations** `readOnlyHint: true`. **Scope** `media:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `media:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -1270,7 +1293,7 @@ The import runs in the background. This returns a `fileId` straight away. Poll
 `livereacting_get_import_status` with it to find out when the file is ready. Only one
 import can run at a time per account.
 
-**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`.
 Calling it twice with the same URL imports the file twice. **Scope** `media:write`.
 
 | Input | Type | Required | Meaning |
@@ -1307,7 +1330,7 @@ plan's max file size, and a video counts against the storage quota.
 The import runs in the background and is polled exactly like `livereacting_import_media`.
 Only one import can run at a time per account.
 
-**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: true`.
 Calling it twice imports the file twice. **Scope** `media:write`.
 
 | Input | Type | Required | Meaning |
@@ -1353,7 +1376,7 @@ Same limits as a Studio upload: the extension must match `type` (video `.mp4 .m4
 .heic .webp`), the size must fit the plan's max file size, and a video is refused once
 storage is full. The part URLs and the token expire after 3 days.
 
-**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: false`.
 Each call opens a new upload. **Scope** `media:write`.
 
 | Input | Type | Required | Meaning |
@@ -1379,7 +1402,7 @@ Finish an upload started with `livereacting_upload_file`, after every part has b
 and add up to the declared size, then adds the file to the library and returns it. A video
 goes through the same checks, thumbnail and encoding as a Studio upload.
 
-**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`.
 A second call with the same token returns the same file, so a retry is safe. A retry that arrives
 while the first call is still checking the file (up to about 30 seconds for a video) answers
 `UPLOAD_PROCESSING`: wait 30 seconds and call again. If the first call was interrupted, this can
@@ -1420,7 +1443,7 @@ encoding, and a playlist built with it is refused until that is done. Read `usab
 true only when the transfer completed and the file can go straight into a playlist, and
 `nextStep`, which names the tool to call when it cannot.
 
-**Annotations** `readOnlyHint: true`, `idempotentHint: true`. This tool writes nothing.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: false`. This tool writes nothing.
 **Scope** `media:read`.
 
 | Input | Type | Required | Meaning |
@@ -1472,7 +1495,7 @@ Queue video files for encoding so they can be streamed.
 Encoding runs in the background. This returns immediately. Poll
 `livereacting_get_encode_status` to find out when the files are ready.
 
-**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`.
+**Annotations** `readOnlyHint: false`, `destructiveHint: false`, `idempotentHint: false`, `openWorldHint: false`.
 Queueing a file that is already queued or encoding is skipped rather than duplicated, but a
 file that has already finished encoding is encoded again. After a timeout, check
 `livereacting_get_encode_status` before you call this again. **Scope** `media:write`.
@@ -1508,7 +1531,7 @@ Read `done`, or `summary`, to decide whether to keep waiting. An empty `encoding
 not mean the work finished: an `offset` past the end of the list returns no rows while files
 are still queued.
 
-**Annotations** `readOnlyHint: true`. **Scope** `media:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `media:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -1557,7 +1580,7 @@ moment.
 
 There is no CSV export here. Use the REST API for that.
 
-**Annotations** `readOnlyHint: true`. **Scope** `analytics:read`.
+**Annotations** `readOnlyHint: true`, `destructiveHint: false`, `openWorldHint: false`. **Scope** `analytics:read`.
 
 | Input | Type | Required | Meaning |
 |---|---|---|---|
@@ -2091,7 +2114,7 @@ same number.
 | Item | Value |
 |---|---|
 | Server name | `livereacting` |
-| Server version | `1.1.0` |
+| Server version | `1.2.0` |
 | Registry name | `com.livereacting/livereacting` |
 | Manifest | `server.json`, validated against the `2025-12-11` registry schema |
 
