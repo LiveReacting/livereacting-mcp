@@ -86,9 +86,12 @@ account and clicks Allow. Discovery starts from the `401` on an unauthenticated 
 
 ### Who can use it
 
-API access is included with every paid plan. An account on the Free plan gets
-`403 API_ACCESS_REQUIRES_PAID_PLAN` on every call, and cannot finish the OAuth sign-in. The
-message explains the limit. Tool results never ask the customer to upgrade: ChatGPT's plugin
+API access is included with every paid plan. With an API key, an account on the Free plan gets
+`403 API_ACCESS_REQUIRES_PAID_PLAN` on every call. With OAuth, any account can connect: the
+consent page notes when the plan does not include API access, the tools list as usual, and every
+tool call returns a tool error (`isError: true`) with the `API_ACCESS_REQUIRES_PAID_PLAN` message.
+The plan is checked on every call, so the tools start working as soon as the plan includes API
+access, with no new sign-in, and stop again if it no longer does. The message explains the limit. Tool results never ask the customer to upgrade: ChatGPT's plugin
 rules forbid it, so the server drops upgrade sentences from the messages it relays.
 
 Two cases break that rule, one in each direction. An account we have given an access override
@@ -2006,7 +2009,7 @@ its own remedy.
 |---|---|
 | `PROJECT_ALREADY_LIVE` | Call `livereacting_get_stream_status` to read the current state. Do not retry `livereacting_start_stream` |
 | `ACTIVE_SCHEDULES_EXIST` | Cancel first, then schedule. The ordering is required |
-| `API_ACCESS_REQUIRES_PAID_PLAN` | Tell the customer to upgrade. No tool will work until then |
+| `API_ACCESS_REQUIRES_PAID_PLAN` | Tell the customer the current plan does not include API access. Retrying will not help; once the plan includes it, the tools work without connecting again |
 | `YOUTUBE_ANALYTICS_CONSENT_REQUIRED` | The customer must grant access in the Studio. No retry will succeed until they have |
 | `ACCOUNT_SELECTION_REQUIRED` | The ids to choose between are in `availableAccounts`. When they are missing, call `livereacting_list_destinations` |
 | `FILE_NOT_USABLE` and `FILES_NOT_USABLE` | A next step for each issue: wait for the import, import again, poll the encoder, or call `livereacting_encode_media` first |
@@ -2029,7 +2032,7 @@ because it tells you how serious the failure is and whether a retry can help.
 | Code | HTTP | What it means | What to do |
 |---|---|---|---|
 | `INVALID_API_KEY` | 401 | Missing or invalid key | Check the `Authorization` header |
-| `API_ACCESS_REQUIRES_PAID_PLAN` | 403 | The account has no API access: a Free plan without an override, or a paused subscription | Upgrade at the URL in the message, or resume the subscription |
+| `API_ACCESS_REQUIRES_PAID_PLAN` | 403 | The account has no API access: a Free plan without an override, or a paused subscription | Use an account whose plan includes API access, or resume the subscription. Over OAuth this arrives as a tool error, not a `403` |
 | `VALIDATION_ERROR` | 400 | An argument is wrong, missing or out of range | Read the message. It names the field |
 | `PROJECT_NOT_FOUND` | 404 | No such project on this account | Check the id with `livereacting_list_projects` |
 | `SCENE_NOT_FOUND` | 404 | No such scene in this project | Check with `livereacting_get_scenes` |
@@ -2097,7 +2100,8 @@ tool results.
 Authentication happens even earlier, in the API-key middleware, so it answers with an ordinary
 HTTP JSON body and no JSON-RPC envelope at all: `401 INVALID_API_KEY` for a missing or invalid
 key, and `403 API_ACCESS_REQUIRES_PAID_PLAN` for an account without API access. A client that
-only parses JSON-RPC sees a transport failure there rather than a message.
+only parses JSON-RPC sees a transport failure there rather than a message. An OAuth connection
+is different: an account without API access gets a tool error on each tool call, not a `403`.
 
 An unexpected failure inside a tool does reach the model as a tool error. It says the tool
 failed on our side, that nothing was changed by the call, and to contact

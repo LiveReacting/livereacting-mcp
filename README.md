@@ -22,8 +22,10 @@ API access is included with **every paid plan**. Create a key in the
 [Developer section](https://studio.livereacting.com/developer) of the LiveReacting Studio.
 Keys start with `lr_`.
 
-An account on the Free plan gets `403 API_ACCESS_REQUIRES_PAID_PLAN` on every call, and the
-error says so, so your agent can tell you what to do about it.
+With an API key, an account on the Free plan gets `403 API_ACCESS_REQUIRES_PAID_PLAN` on every
+call. With OAuth (ChatGPT, Claude), the account can connect, and each tool call returns an error
+that explains the plan limit. The tools start working as soon as the plan includes API access,
+without connecting again.
 
 ---
 
