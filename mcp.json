@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "livereacting": {
+      "url": "https://mcp.livereacting.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LIVEREACTING_API_KEY}"
+      }
+    }
+  }
+}

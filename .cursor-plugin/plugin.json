@@ -1,0 +1,25 @@
+{
+  "name": "livereacting",
+  "displayName": "LiveReacting",
+  "version": "1.0.0",
+  "description": "Run a 24/7 live stream of pre-recorded videos, or live stream a recorded video at a set time. Build, multistream, schedule and check your LiveReacting streams from Cursor.",
+  "author": {
+    "name": "LiveReacting",
+    "email": "hello@livereacting.com"
+  },
+  "homepage": "https://www.livereacting.com/mcp",
+  "repository": "https://github.com/LiveReacting/livereacting-mcp",
+  "keywords": ["live streaming", "24/7 live stream", "pre-recorded live stream", "multistream", "YouTube Live", "mcp"],
+  "logo": "assets/logo.png",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "LIVEREACTING_API_KEY": {
+        "type": "string",
+        "title": "LiveReacting API key",
+        "description": "Starts with lr_. Create one at https://studio.livereacting.com/developer (paid plans include API access)."
+      }
+    },
+    "required": ["LIVEREACTING_API_KEY"]
+  }
+}
