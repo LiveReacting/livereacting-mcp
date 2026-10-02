@@ -87,6 +87,10 @@ In `~/.cursor/mcp.json`. Cursor resolves `${env:NAME}` in `headers`
 }
 ```
 
+Or install the LiveReacting plugin from the [Cursor Marketplace](https://cursor.com/marketplace)
+and set `LIVEREACTING_API_KEY` under **Plugins** → **Configure**. The plugin is
+[`.cursor-plugin/plugin.json`](.cursor-plugin/plugin.json) and [`mcp.json`](mcp.json) in this repo.
+
 ### VS Code (GitHub Copilot)
 
 In `.vscode/mcp.json`. The `inputs` block makes VS Code prompt for the key instead of
