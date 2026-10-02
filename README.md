@@ -114,7 +114,13 @@ storing it in the repo:
 
 ### Gemini CLI
 
-In `~/.gemini/settings.json`. Gemini CLI expands `$VAR` and `${VAR}` in every string of
+Install the extension. Gemini CLI asks for the key once and keeps it in the system keychain:
+
+```bash
+gemini extensions install https://github.com/LiveReacting/livereacting-mcp
+```
+
+Or, without the extension, in `~/.gemini/settings.json`. Gemini CLI expands `$VAR` and `${VAR}` in every string of
 the file before it validates it, headers included
 ([docs](https://geminicli.com/docs/reference/configuration/)), so the key stays out of it:
 
