@@ -9,6 +9,7 @@
   },
   "homepage": "https://www.livereacting.com/mcp",
   "repository": "https://github.com/LiveReacting/livereacting-mcp",
+  "license": "MIT",
   "keywords": ["live streaming", "24/7 live stream", "pre-recorded live stream", "multistream", "YouTube Live", "mcp"],
   "logo": "assets/logo.png",
   "variables": {
