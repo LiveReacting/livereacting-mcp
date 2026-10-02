@@ -1,0 +1,15 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "livereacting",
+  "version": "1.2.0",
+  "description": "Run a 24/7 live stream of pre-recorded videos, or live stream a recorded video at a set time. Build, multistream, schedule and check your LiveReacting streams from your AI agent.",
+  "author": {
+    "name": "LiveReacting",
+    "email": "hello@livereacting.com",
+    "url": "https://www.livereacting.com"
+  },
+  "keywords": ["livereacting", "live stream", "24/7 live stream", "pre-recorded live stream", "multistream", "YouTube Live", "schedule stream", "rtmp"],
+  "homepage": "https://www.livereacting.com/mcp",
+  "repository": "https://github.com/LiveReacting/livereacting-mcp",
+  "license": "MIT"
+}
