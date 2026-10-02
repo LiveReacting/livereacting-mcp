@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "com.livereacting/livereacting",
   "title": "LiveReacting",
-  "description": "Build, schedule, start, monitor and analyse live video streams on YouTube, Facebook and RTMP.",
+  "description": "Run a 24/7 live stream of pre-recorded videos, or live stream a recorded video at a set time.",
   "version": "1.2.0",
   "websiteUrl": "https://www.livereacting.com/mcp",
   "repository": {
@@ -16,7 +16,8 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer <LiveReacting API key>. Create one in the Studio Developer section.",
+          "description": "Bearer followed by your LiveReacting API key. Create the key at https://studio.livereacting.com/developer (paid plans include API access).",
+          "placeholder": "Bearer lr_...",
           "isRequired": true,
           "isSecret": true
         }
