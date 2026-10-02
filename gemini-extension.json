@@ -1,0 +1,20 @@
+{
+  "name": "livereacting",
+  "version": "1.2.0",
+  "description": "Run a 24/7 live stream of pre-recorded videos, or live stream a recorded video at a set time. Build, multistream, schedule and check your LiveReacting streams from Gemini CLI.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "livereacting": {
+      "httpUrl": "https://mcp.livereacting.com/mcp",
+      "headers": { "Authorization": "Bearer ${LIVEREACTING_API_KEY}" }
+    }
+  },
+  "settings": [
+    {
+      "name": "LiveReacting API key",
+      "description": "Starts with lr_. Create one at https://studio.livereacting.com/developer (paid plans).",
+      "envVar": "LIVEREACTING_API_KEY",
+      "sensitive": true
+    }
+  ]
+}
