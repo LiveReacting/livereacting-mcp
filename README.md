@@ -139,6 +139,12 @@ the file before it validates it, headers included
 }
 ```
 
+### Kiro
+
+Install this repo as a power: **Powers** panel → **Add Custom Power** → **Import power from
+GitHub**, then paste `https://github.com/LiveReacting/livereacting-mcp`. The power reads
+`LIVEREACTING_API_KEY` from your environment ([mcp.json](mcp.json)).
+
 ### Zed
 
 In your Zed `settings.json`, under `context_servers`, add an HTTP server pointing at the
@@ -160,6 +166,7 @@ Add a **Remote Extension** (Streamable HTTP) in Goose's settings, URL
 | VS Code Copilot | `headers` with a prompted input |
 | GitHub Copilot coding agent | static header secret only. This product does not support OAuth remote servers, so the key path is the only path here, now and later |
 | Gemini CLI | `$VAR` in `settings.json` headers |
+| Kiro | `${VAR}` in the power's `mcp.json` headers |
 | Zed | `headers` in `settings.json` |
 | Goose | remote extension header |
 | ChatGPT | connectors take OAuth or nothing, never a pasted key |
@@ -296,4 +303,5 @@ playlist, but it will still do what you asked.
 Full MCP reference: [developers.livereacting.com/mcp](https://developers.livereacting.com/mcp)
 Full REST API reference: [developers.livereacting.com](https://developers.livereacting.com)
 Support: [hello@livereacting.com](mailto:hello@livereacting.com)
+Privacy policy: [livereacting.com/privacy-policy](https://www.livereacting.com/privacy-policy)
 
