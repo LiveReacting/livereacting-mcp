@@ -1,0 +1,20 @@
+{
+  "name": "livereacting",
+  "displayName": "LiveReacting",
+  "version": "1.0.0",
+  "description": "Run a 24/7 live stream of pre-recorded videos, or live stream a recorded video at a set time. Build, multistream, schedule and check your LiveReacting streams from a conversation.",
+  "author": {
+    "name": "LiveReacting",
+    "email": "hello@livereacting.com",
+    "url": "https://www.livereacting.com"
+  },
+  "homepage": "https://www.livereacting.com/mcp",
+  "repository": "https://github.com/LiveReacting/livereacting-mcp",
+  "license": "MIT",
+  "keywords": ["live streaming", "24/7 live stream", "pre-recorded live stream", "multistream", "youtube live", "schedule stream", "rtmp"],
+  "icon": "./assets/logo.png",
+  "documentationUrl": "https://developers.livereacting.com/mcp/",
+  "supportUrl": "https://www.livereacting.com/contact",
+  "privacyPolicyUrl": "https://www.livereacting.com/privacy-policy",
+  "termsOfServiceUrl": "https://www.livereacting.com/terms-of-service"
+}
