@@ -169,7 +169,7 @@ Add a **Remote Extension** (Streamable HTTP) in Goose's settings, URL
 | Kiro | `${VAR}` in the power's `mcp.json` headers |
 | Zed | `headers` in `settings.json` |
 | Goose | remote extension header |
-| ChatGPT | connectors take OAuth or nothing, never a pasted key |
+| ChatGPT | install the LiveReacting app from the ChatGPT app directory and sign in with your LiveReacting account. See [livereacting.com/chatgpt](https://www.livereacting.com/chatgpt) |
 
 **Protocol revisions:** `2024-10-07` through `2025-11-25`. If your client reports a version
 error, that is the first thing to check. `2026-07-28` is not supported yet — no published
